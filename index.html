@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Consulta Tarkov</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #111; /* Fondo */
+        }
+
+        #itemName {
+            background-color: #333;
+        }
+
+        #result {
+            margin-top: 20px;
+        }
+
+        .result-item {
+            border: 1px solid #ccc;
+            padding: 8px;
+            margin-bottom: 4px;
+            background-color: gray; /* Fondo */
+        }
+
+        .result-item img {
+            max-width: 20%;
+            height: auto;
+            max-height: 50px;
+        }
+    </style>
+</head>
+
+<body>
+    <input type="text" id="itemName" placeholder="" oninput="performSearch()">
+    <div id="result"></div>
+
+    <script>
+        let searchTimeout;
+
+        function performSearch() {
+            const itemNameInput = document.getElementById('itemName');
+            const itemName = itemNameInput.value.trim();
+
+            // Verificar si la longitud del texto es de al menos 3 caracteres
+            if (itemName.length >= 3) {
+                clearTimeout(searchTimeout);
+                // Usuario deja de escribir
+                searchTimeout = setTimeout(() => {
+                    fetchData();
+                }, 300);
+            }
+        }
+
+        function fetchData() {
+            const itemName = document.getElementById('itemName').value;
+
+            fetch('https://api.tarkov.dev/graphql', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                },
+                body: JSON.stringify({
+                    query: `
+                  {
+                    items(lang: es, name: "${itemName}") {
+                      name
+                      shortName
+                      avg24hPrice
+                      gridImageLink
+                    }
+                  }
+                `,
+                }),
+            })
+                .then(response => response.json())
+                .then(data => {
+                    displayResults(data.data.items);
+                })
+                .catch(error => {
+                    console.error('Error fetching data:', error);
+                    displayResults([{
+                        error: 'Error al obtener los datos.'
+                    }]);
+                });
+        }
+
+        function displayResults(items) {
+            const resultContainer = document.getElementById('result');
+            resultContainer.innerHTML = '';
+
+            if (items.length > 0) {
+                items.forEach((item, index) => {
+                    const itemHtml = `
+                    <div class="result-item">
+                      <strong> ${item.name} </strong></br>
+                      ${item.shortName}</br>
+                      ₽ ${item.avg24hPrice}</br>
+                      <img src="${item.gridImageLink}" alt="Imagen del item">
+                    </div>
+                  `;
+                    resultContainer.innerHTML += itemHtml;
+                });
+            } else {
+                resultContainer.textContent = 'No se encontraron resultados.';
+            }
+        }
+    </script>
+</body>
+
+</html>
